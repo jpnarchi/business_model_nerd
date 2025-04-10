@@ -303,26 +303,26 @@ const RevenueModelOverview = () => {
             <div className="space-y-2">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-500">Equipo de Desarrollo</span>
-                <span className="text-red-600">-{formatCurrency(netProfitBreakdown.expenses.development)}</span>
+                <span className="text-red-600">-{formatCurrency(31500)}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-500">Marketing</span>
-                <span className="text-red-600">-{formatCurrency(netProfitBreakdown.expenses.marketing)}</span>
+                <span className="text-red-600">-{formatCurrency(80262.37)}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-500">Infraestructura</span>
-                <span className="text-red-600">-{formatCurrency(netProfitBreakdown.expenses.infrastructure)}</span>
+                <span className="text-red-600">-{formatCurrency(3207.64)}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-500">Tokens IA</span>
-                <span className="text-red-600">-{formatCurrency(netProfitBreakdown.expenses.tokens)}</span>
+                <span className="text-red-600">-{formatCurrency(42881.07)}</span>
               </div>
             </div>
             <div className="pt-4 border-t">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Beneficio Neto</span>
                 <span className={`font-bold ${netProfitBreakdown.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(netProfitBreakdown.netProfit)}
+                  {formatCurrency(157851.09)}
                 </span>
               </div>
             </div>

@@ -2,7 +2,8 @@ import React from 'react';
 import { useFinancial } from '../context/FinancialContext';
 
 const NetProfitSummary = () => {
-  const { totalRevenue, totalExpenses } = useFinancial();
+  const { totalRevenue } = useFinancial();
+  const totalExpenses = 157851.09; // Gasto total fijo
   const netProfit = totalRevenue - totalExpenses;
   const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
@@ -38,26 +39,6 @@ const NetProfitSummary = () => {
           <div className={`text-sm mt-1 ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             Margen: {profitMargin.toFixed(1)}%
           </div>
-        </div>
-      </div>
-      
-      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-        <h3 className="text-md font-semibold mb-2">Análisis Financiero</h3>
-        <div className="text-sm text-gray-600 space-y-2">
-          <p>
-            <strong>Desglose de Ingresos:</strong> Los ingresos totales se calculan a partir de todas las conversiones de usuarios y pagos recurrentes en todos los niveles de precios.
-          </p>
-          <p>
-            <strong>Categorías de Gastos:</strong> Los gastos principales incluyen costos del equipo de desarrollo ({((totalExpenses * 0.45).toFixed(1))}%), 
-            gastos de marketing ({((totalExpenses * 0.35).toFixed(1))}%), y costos operativos ({((totalExpenses * 0.20).toFixed(1))}%).
-          </p>
-          <p>
-            <strong>Análisis de Beneficios:</strong> El margen de beneficio actual del {profitMargin.toFixed(1)}% {
-              profitMargin > 20 ? 'indica un modelo de negocio saludable con buen potencial de escalabilidad.' :
-              profitMargin > 0 ? 'sugiere una operación sostenible con margen para optimización.' :
-              'indica la necesidad de optimización de costos y estrategias de crecimiento de ingresos.'
-            }
-          </p>
         </div>
       </div>
     </div>

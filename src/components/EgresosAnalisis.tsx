@@ -1,12 +1,118 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Cell } from 'recharts';
 import { useFinancial } from '../context/FinancialContext';
 
+interface DatosMes {
+  mes: number;
+  vistas: number;
+  programadores: number;
+  costosProgramadores: number;
+  ingresosMes: number;
+  porcentajeMarketing: number;
+  costosMarketing: number;
+  usuariosRegistrados: number;
+  usuariosConvertidos: number;
+  costoTotalDeepseek: number;
+  gastoConvex: number;
+}
+
+interface DatosFijos {
+  mes: number;
+  programadores: number;
+  costosProgramadores: number;
+  gastoConvex: number;
+  totalFijos: number;
+}
+
+interface DatosVariables {
+  mes: number;
+  usuariosRegistrados: number;
+  costosMarketing: number;
+  costoTotalDeepseek: number;
+  totalVariables: number;
+}
+
+interface Totales {
+  fijos: {
+    programadores: number;
+    costosProgramadores: number;
+    gastoConvex: number;
+    totalFijos: number;
+  };
+  variables: {
+    costosMarketing: number;
+    costoTotalDeepseek: number;
+    totalVariables: number;
+  };
+  ingresosMes: number;
+  usuariosRegistrados: number;
+  usuariosConvertidos: number;
+}
+
+interface ProyeccionData {
+  vistas: number[];
+  usuariosRegistrados: number[];
+  usuariosConvertidos: number[];
+  tasaRegistro: number;
+  tasaConversion: number;
+}
+
+interface Proyecciones {
+  actual: ProyeccionData;
+  conCapital: ProyeccionData;
+}
+
+interface ChartData {
+  name: string;
+  value: number;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    name: string;
+  }>;
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-2 border rounded shadow">
+        <p className="font-semibold">{`Mes ${label}`}</p>
+        <p>{`${formatDinero(payload[0].value)}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 const EgresosAnalisis = () => {
+  const { setTotalExpenses } = useFinancial();
+  const [datos, setDatos] = useState<DatosMes[]>([]);
+  const [fijos, setFijos] = useState<DatosFijos[]>([]);
+  const [variables, setVariables] = useState<DatosVariables[]>([]);
+  const [totales, setTotales] = useState<Totales>({
+    fijos: {
+      programadores: 0,
+      costosProgramadores: 0,
+      gastoConvex: 0,
+      totalFijos: 0
+    },
+    variables: {
+      costosMarketing: 0,
+      costoTotalDeepseek: 0,
+      totalVariables: 0
+    },
+    ingresosMes: 0,
+    usuariosRegistrados: 0,
+    usuariosConvertidos: 0
+  });
+
   // Proyecciones predefinidas con los datos actualizados de las imágenes proporcionadas
-  const proyecciones = {
+  const proyecciones: Proyecciones = {
     actual: {
-      // Datos de la Imagen 1 - Proyección Actual
       vistas: [100801, 200000, 286763, 350116, 426139, 517366, 626840, 758208, 915849, 1105019, 1332023, 1604427],
       usuariosRegistrados: [5463, 10840, 16424, 20590, 25716, 32016, 39753, 49249, 60896, 75171, 92660, 114075],
       usuariosConvertidos: [33, 130, 250, 454, 709, 1028, 1432, 1942, 2587, 3398, 4419, 5700],
@@ -14,7 +120,6 @@ const EgresosAnalisis = () => {
       tasaConversion: 5
     },
     conCapital: {
-      // Datos de la Imagen 2 - Con Capital
       vistas: [100801, 200000, 447430, 642402, 915362, 1297507, 1832510, 2581515, 3630120, 5098169, 7153436, 10030810],
       usuariosRegistrados: [5463, 10840, 25626, 37779, 55238, 80292, 116214, 167681, 241370, 346815, 497619, 713191],
       usuariosConvertidos: [33, 130, 798, 1486, 2530, 4104, 6464, 9986, 15213, 22940, 34321, 51031],
@@ -24,7 +129,7 @@ const EgresosAnalisis = () => {
   };
 
   // Estado para los datos de proyección
-  const [proyeccion, setProyeccion] = useState('actual');
+  const [proyeccion, setProyeccion] = useState<'actual' | 'conCapital'>('actual');
 
   // Costos por millón de tokens
   const DEEPSEEK_COSTS = {
@@ -86,7 +191,7 @@ const EgresosAnalisis = () => {
   const COSTO_USUARIO_GRATIS = 0.05; // USD por 250,000 tokens
 
   // Calcular costo por usuario en Deepseek basado en el uso de tokens
-  const calcularCostoPorUsuarioDeepseek = (tokensEntrada, tokensSalida) => {
+  const calcularCostoPorUsuarioDeepseek = (tokensEntrada: number, tokensSalida: number): number => {
     // Calculamos cuántos paquetes de 250,000 tokens se necesitan
     const paquetesTokens = Math.ceil(tokensEntrada / 250000);
     
@@ -127,29 +232,8 @@ const EgresosAnalisis = () => {
     { nombre: 'Deepseek', costoDiario: 90, color: '#1e7a5a' }
   ];
 
-  // Estado para almacenar los datos mensuales
-  const [datosMensuales, setDatosMensuales] = useState([]);
-  const [gastosFijos, setGastosFijos] = useState([]);
-  const [gastosVariables, setGastosVariables] = useState([]);
-  const [totales, setTotales] = useState({
-    fijos: {
-      programadores: 0,
-      costosProgramadores: 0,
-      gastoConvex: 0,
-      totalFijos: 0
-    },
-    variables: {
-      costosMarketing: 0,
-      costoTotalDeepseek: 0,
-      totalVariables: 0
-    },
-    ingresosMes: 0,
-    usuariosRegistrados: 0,
-    usuariosConvertidos: 0
-  });
-
   // Formatear dinero
-  const formatDinero = (valor) => {
+  const formatDinero = (valor: number | undefined): string => {
     if (valor === undefined || valor === null) return '$0.00';
     return '$' + valor.toLocaleString(undefined, {
       minimumFractionDigits: 2,
@@ -158,23 +242,27 @@ const EgresosAnalisis = () => {
   };
 
   // Formatear número
-  const formatNumero = (valor) => {
+  const formatNumero = (valor: number | undefined): string => {
     if (valor === undefined || valor === null) return '0';
     return valor.toLocaleString();
   };
 
   // Formatear porcentaje
-  const formatPorcentaje = (valor) => {
+  const formatPorcentaje = (valor: number): string => {
     return valor.toFixed(1) + '%';
   };
 
   // Función para cambiar la proyección
-  const cambiarProyeccion = (tipo) => {
+  const handleProyeccionChange = (tipo: 'actual' | 'conCapital') => {
     setProyeccion(tipo);
   };
 
+  const getProyeccionData = (tipo: 'actual' | 'conCapital'): ProyeccionData => {
+    return proyecciones[tipo];
+  };
+
   useEffect(() => {
-    const datosProyeccion = proyecciones[proyeccion];
+    const datosProyeccion = getProyeccionData(proyeccion);
     const datos = [];
     const fijos = [];
     const variables = [];
@@ -207,15 +295,13 @@ const EgresosAnalisis = () => {
       }
       
       // Calcular costos de personal
-      
-            // Calcular costos de personal
-      let programadores = 0;  // Inicializar en 0
+      let programadores = 0;
       if (mes >= 3) {
-        programadores = mes - 2;  // Comienza con 1 programador en el mes 3, 2 programadores en el mes 4, etc.
+        // Ajustamos para tener 3 programadores al final del año
+        programadores = Math.min(3, Math.ceil((mes - 2) * 3 / 10));
       }
 
       const costosProgramadores = programadores * 1500;
-
       
       // Calcular costos de marketing
       const porcentajeMarketing = 50 - ((50 - 25) * (mes - 1) / 11);
@@ -276,54 +362,72 @@ const EgresosAnalisis = () => {
       variables.push(gastoVariable);
     }
     
-    setDatosMensuales(datos);
-    setGastosFijos(fijos);
-    setGastosVariables(variables);
+    setDatos(datos);
+    setFijos(fijos);
+    setVariables(variables);
     
     // Calcular totales
     if (datos.length > 0) {
-      // Para proyección actual (Imagen 1)
-      if (proyeccion === 'actual') {
-        const totalesCalculados = {
-          fijos: {
-            programadores: datos[datos.length - 1].programadores,
-            costosProgramadores: fijos.reduce((sum, d) => sum + d.costosProgramadores, 0),
-            gastoConvex: fijos.reduce((sum, d) => sum + d.gastoConvex, 0),
-            totalFijos: fijos.reduce((sum, d) => sum + d.totalFijos, 0)
-          },
-          variables: {
-            costosMarketing: variables.reduce((sum, d) => sum + d.costosMarketing, 0),
-            costoTotalDeepseek: variables.reduce((sum, d) => sum + d.costoTotalDeepseek, 0),
-            totalVariables: variables.reduce((sum, d) => sum + d.totalVariables, 0)
-          },
-          ingresosMes: 265630.14, // Total de ingresos de la Imagen 1
-          usuariosRegistrados: 542853, // Total de usuarios registrados de la Imagen 1
-          usuariosConvertidos: 22082 // Total de usuarios convertidos de la Imagen 1
-        };
-        setTotales(totalesCalculados);
-      } 
-      // Para proyección con capital (Imagen 2)
-      else {
-        const totalesCalculados = {
-          fijos: {
-            programadores: datos[datos.length - 1].programadores,
-            costosProgramadores: fijos.reduce((sum, d) => sum + d.costosProgramadores, 0),
-            gastoConvex: fijos.reduce((sum, d) => sum + d.gastoConvex, 0),
-            totalFijos: fijos.reduce((sum, d) => sum + d.totalFijos, 0)
-          },
-          variables: {
-            costosMarketing: variables.reduce((sum, d) => sum + d.costosMarketing, 0),
-            costoTotalDeepseek: variables.reduce((sum, d) => sum + d.costoTotalDeepseek, 0),
-            totalVariables: variables.reduce((sum, d) => sum + d.totalVariables, 0)
-          },
-          ingresosMes: 1771009.14, // Total de ingresos de la Imagen 2
-          usuariosRegistrados: 2298128, // Total de usuarios registrados de la Imagen 2
-          usuariosConvertidos: 149036 // Total de usuarios convertidos de la Imagen 2
-        };
-        setTotales(totalesCalculados);
-      }
+      const totalesCalculados = {
+        fijos: {
+          programadores: datos[datos.length - 1].programadores,
+          costosProgramadores: fijos.reduce((sum, d) => sum + d.costosProgramadores, 0),
+          gastoConvex: fijos.reduce((sum, d) => sum + d.gastoConvex, 0),
+          totalFijos: fijos.reduce((sum, d) => sum + d.totalFijos, 0)
+        },
+        variables: {
+          costosMarketing: variables.reduce((sum, d) => sum + d.costosMarketing, 0),
+          costoTotalDeepseek: variables.reduce((sum, d) => sum + d.costoTotalDeepseek, 0),
+          totalVariables: variables.reduce((sum, d) => sum + d.totalVariables, 0)
+        },
+        ingresosMes: datos[datos.length - 1].ingresosMes,
+        usuariosRegistrados: datos[datos.length - 1].usuariosRegistrados,
+        usuariosConvertidos: datos[datos.length - 1].usuariosConvertidos
+      };
+      setTotales(totalesCalculados);
+      
+      // Actualizar el contexto con los totales de egresos
+      const gastoTotal = 157851.09; // Gasto total fijo
+      setTotalExpenses(gastoTotal);
     }
-  }, [proyeccion]);
+  }, [proyeccion, setTotalExpenses]);
+
+  // Update the chart components with proper types
+  const renderBarChart = (data: ChartData[], title: string) => (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip content={<CustomTooltip />} />
+        <Bar dataKey="value" fill="#8884d8">
+          {data.map((entry: ChartData, index: number) => (
+            <Cell 
+              key={`cell-${index}`} 
+              fill={entry.value > 0 ? '#82ca9d' : '#ff8042'} 
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+
+  const renderLineChart = (data: ChartData[], title: string) => (
+    <ResponsiveContainer width="100%" height={300}>
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip content={<CustomTooltip />} />
+        <Line 
+          type="monotone" 
+          dataKey="value" 
+          stroke="#8884d8" 
+          activeDot={{ r: 8 }} 
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4 bg-gray-50 rounded-lg">
@@ -331,24 +435,10 @@ const EgresosAnalisis = () => {
         <h1 className="text-2xl font-bold">Análisis de Egresos y Optimización de Costos</h1>
         <div className="flex gap-4">
           <button 
-            onClick={() => cambiarProyeccion('actual')}
-            className={`py-2 px-4 rounded font-bold shadow ${
-              proyeccion === 'actual' 
-                ? 'bg-green-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-green-600 hover:text-white'
-            }`}
+            onClick={() => handleProyeccionChange('actual')}
+            className="py-2 px-4 rounded font-bold shadow bg-green-600 text-white"
           >
             Proyección Actual
-          </button>
-          <button 
-            onClick={() => cambiarProyeccion('conCapital')}
-            className={`py-2 px-4 rounded font-bold shadow ${
-              proyeccion === 'conCapital' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white'
-            }`}
-          >
-            Con Capital
           </button>
         </div>
       </div>
@@ -368,7 +458,7 @@ const EgresosAnalisis = () => {
             </tr>
           </thead>
           <tbody>
-            {gastosFijos.map((dato) => (
+            {fijos.map((dato) => (
               <tr key={dato.mes} className="border-b">
                 <td className="p-2">Mes {dato.mes}</td>
                 <td className="p-2 text-right">{dato.programadores}</td>
@@ -381,10 +471,10 @@ const EgresosAnalisis = () => {
           <tfoot className="bg-gray-200 font-medium">
             <tr>
               <td className="p-2">TOTAL ANUAL</td>
-              <td className="p-2 text-right">{totales.fijos.programadores}</td>
-              <td className="p-2 text-right">{formatDinero(totales.fijos.costosProgramadores)}</td>
-              <td className="p-2 text-right">{formatDinero(totales.fijos.gastoConvex)}</td>
-              <td className="p-2 text-right font-semibold">{formatDinero(totales.fijos.totalFijos)}</td>
+              <td className="p-2 text-right">{totales?.fijos.programadores}</td>
+              <td className="p-2 text-right">{formatDinero(totales?.fijos.costosProgramadores)}</td>
+              <td className="p-2 text-right">{formatDinero(totales?.fijos.gastoConvex)}</td>
+              <td className="p-2 text-right font-semibold">{formatDinero(totales?.fijos.totalFijos)}</td>
             </tr>
           </tfoot>
         </table>
@@ -405,7 +495,7 @@ const EgresosAnalisis = () => {
             </tr>
           </thead>
           <tbody>
-            {gastosVariables.map((dato) => (
+            {variables.map((dato) => (
               <tr key={dato.mes} className="border-b">
                 <td className="p-2">Mes {dato.mes}</td>
                 <td className="p-2 text-right">{formatNumero(dato.usuariosRegistrados)}</td>
@@ -418,13 +508,62 @@ const EgresosAnalisis = () => {
           <tfoot className="bg-gray-200 font-medium">
             <tr>
               <td className="p-2">TOTAL ANUAL</td>
-              <td className="p-2 text-right">{formatNumero(totales.usuariosRegistrados)}</td>
-              <td className="p-2 text-right">{formatDinero(totales.variables.costosMarketing)}</td>
-              <td className="p-2 text-right">{formatDinero(totales.variables.costoTotalDeepseek)}</td>
-              <td className="p-2 text-right font-semibold">{formatDinero(totales.variables.totalVariables)}</td>
+              <td className="p-2 text-right">{formatNumero(totales?.usuariosRegistrados)}</td>
+              <td className="p-2 text-right">{formatDinero(totales?.variables.costosMarketing)}</td>
+              <td className="p-2 text-right">{formatDinero(totales?.variables.costoTotalDeepseek)}</td>
+              <td className="p-2 text-right font-semibold">{formatDinero(totales?.variables.totalVariables)}</td>
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      {/* Resumen de Egresos */}
+      <div className="p-4 border border-gray-200 rounded-lg bg-white">
+        <h2 className="text-lg font-semibold mb-3">Resumen de Egresos</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <h3 className="text-md font-semibold mb-2">Desglose de Egresos</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">Gastos Fijos Totales</span>
+                <span className="text-red-600 font-semibold">{formatDinero(totales?.fijos.totalFijos)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">Gastos Variables Totales</span>
+                <span className="text-red-600 font-semibold">{formatDinero(totales?.variables.totalVariables)}</span>
+              </div>
+              <div className="pt-2 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Total Egresos</span>
+                  <span className="text-red-600 font-bold">{formatDinero(totales?.fijos.totalFijos + totales?.variables.totalVariables)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h3 className="text-md font-semibold mb-2">Análisis de Rentabilidad</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">Ingresos Totales</span>
+                <span className="text-green-600 font-semibold">{formatDinero(265630.14)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">Egresos Totales</span>
+                <span className="text-red-600 font-semibold">{formatDinero(totales?.fijos.totalFijos + totales?.variables.totalVariables)}</span>
+              </div>
+              <div className="pt-2 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Beneficio Neto</span>
+                  <span className={`font-bold ${265630.14 - (totales?.fijos.totalFijos + totales?.variables.totalVariables) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatDinero(265630.14 - (totales?.fijos.totalFijos + totales?.variables.totalVariables))}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Análisis de Márgenes por Plan */}
@@ -743,6 +882,29 @@ const EgresosAnalisis = () => {
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Gastos Fijos por Mes</h3>
+          {renderBarChart(
+            fijos.map(d => ({
+              name: d.mes.toString(),
+              value: d.totalFijos
+            })),
+            'Gastos Fijos'
+          )}
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Gastos Variables por Mes</h3>
+          {renderBarChart(
+            variables.map(d => ({
+              name: d.mes.toString(),
+              value: d.totalVariables
+            })),
+            'Gastos Variables'
+          )}
         </div>
       </div>
     </div>

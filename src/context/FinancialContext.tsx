@@ -19,8 +19,8 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [monthlyViews, setMonthlyViews] = useState([
     100801, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 1100000, 1200000
   ]);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(265630);
+  const [totalExpenses, setTotalExpenses] = useState(157851.09);
   const [registeredUsers, setRegisteredUsers] = useState(0);
   const [paidUsers, setPaidUsers] = useState(0);
 

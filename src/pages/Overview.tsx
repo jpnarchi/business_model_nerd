@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, ArrowDownRight, Users, DollarSign, TrendingUp, LineChart, Target } from 'lucide-react';
 import { useFinancial } from '../context/FinancialContext';
@@ -7,7 +7,10 @@ import NetProfitSummary from '../components/NetProfitSummary';
 import RevenueModelOverview from '../components/RevenueModelOverview';
 
 const Overview = () => {
-  const { monthlyViews, totalRevenue, totalExpenses, registeredUsers, paidUsers } = useFinancial();
+  const { monthlyViews, totalRevenue, registeredUsers, paidUsers } = useFinancial();
+  const totalExpenses = 157851.09; // Gasto total fijo
+  const netProfit = totalRevenue - totalExpenses;
+  const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
   // Formatear moneda
   const formatCurrency = (amount: number) => {
@@ -20,7 +23,7 @@ const Overview = () => {
   };
 
   // Formatear números grandes
-  const formatNumber = (num: number) => {
+  const formatLargeNumber = (num: number) => {
     if (num >= 1_000_000) {
       return `${(num / 1_000_000).toFixed(1)}M`;
     }
@@ -81,48 +84,17 @@ const Overview = () => {
             </div>
           </div>
           <h3 className="text-gray-600 text-sm">Usuarios Registrados</h3>
-          <p className="text-2xl font-bold text-gray-800">{formatNumber(registeredUsers)}</p>
-          <Link to="/modelo" className="text-sm text-blue-600 hover:text-blue-800 mt-2 inline-block">
-            Ver métricas de usuarios →
-          </Link>
+          <p className="text-2xl font-bold text-gray-800">{formatLargeNumber(registeredUsers)}</p>
         </div>
 
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-purple-100 rounded">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
+              <Target className="w-6 h-6 text-purple-600" />
             </div>
           </div>
-          <h3 className="text-gray-600 text-sm">Usuarios de Pago</h3>
-          <p className="text-2xl font-bold text-gray-800">{formatNumber(paidUsers)}</p>
-          <Link to="/modelo" className="text-sm text-blue-600 hover:text-blue-800 mt-2 inline-block">
-            Ver métricas de conversión →
-          </Link>
-        </div>
-      </div>
-
-      {/* Información Adicional */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Insights Clave</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="p-4 bg-green-50 rounded-lg">
-            <h4 className="font-semibold text-green-800 mb-2">Crecimiento de Ingresos</h4>
-            <p className="text-sm text-green-600">
-              Proyección de crecimiento mensual del 23.5% con tasas de conversión y retención de usuarios en aumento.
-            </p>
-          </div>
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-semibold text-blue-800 mb-2">Optimización de Costos</h4>
-            <p className="text-sm text-blue-600">
-              Reducción del 78% en costos de IA mediante la migración a Deepseek Chat.
-            </p>
-          </div>
-          <div className="p-4 bg-purple-50 rounded-lg">
-            <h4 className="font-semibold text-purple-800 mb-2">Métricas de Usuarios</h4>
-            <p className="text-sm text-purple-600">
-              Tasa de conversión del 5.42% con crecimiento del 28.3% en registro de usuarios.
-            </p>
-          </div>
+          <h3 className="text-gray-600 text-sm">Usuarios Pagados</h3>
+          <p className="text-2xl font-bold text-gray-800">{formatLargeNumber(paidUsers)}</p>
         </div>
       </div>
     </div>
